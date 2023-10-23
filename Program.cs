@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using eBay.Service.Call;
 using eBay.Service.Core.Sdk;
 using eBay.Service.Core.Soap;
-
+using System.Configuration;
 
 namespace EbayServiceTesting
 {
@@ -25,17 +26,71 @@ namespace EbayServiceTesting
             GetAllOrders(orderIds);
             Console.WriteLine();
         }
+        public class OauthViewModal
+        {
+            public string access_token { get; set; }
+            public int expires_in { get; set; }
+            public string refresh_token { get; set; }
+            public int refresh_token_expires_in { get; set; }
+            public string token_type { get; set; }
+            public static OauthViewModal operator +(OauthViewModal c1, OauthViewModal c2)
+            {
+                OauthViewModal temp = new OauthViewModal();
+                temp.expires_in = c1.expires_in + c2.expires_in;
+                //temp.y = c1.y + c2.y;
+                return temp;
+            }
+        }
+        public static string GetRefreshCode(string code)
+        {
+            var client = new HttpClient();
+
+            var scopeList = /*ConfigurationManager.AppSettings["EbayAPI"]*/"https://api.ebay.com" + "/oauth/api_scope/sell.account https://api.ebay.com/oauth/api_scope/sell.inventory";
+
+            var grant_type = new KeyValuePair<string, string>("grant_type", "refresh_token");
+            var codeID = new KeyValuePair<string, string>("refresh_token", code);
+            var redirect_uri = new KeyValuePair<string, string>("scope", scopeList);
+
+            var data = new List<KeyValuePair<string, string>>();
+            data.Add(grant_type);
+            data.Add(codeID);
+            data.Add(redirect_uri);
+            var webRequest = new HttpRequestMessage(HttpMethod.Post, "https://api.ebay.com/identity/v1/oauth2/token")
+            {
+                Content = new FormUrlEncodedContent(data)
+            };
+
+            var username = "RogerBut-Shippers-PRD-199eca255-ce73fe3d";// ConfigurationManager.AppSettings["AppID"];
+            var password = "PRD-1d9f5f516bed-8132-40eb-8fdc-2149";// ConfigurationManager.AppSettings["CertID"];
+            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(username + ":" + password);
+
+            var encodedstring = System.Convert.ToBase64String(plainTextBytes);
+
+
+            client.DefaultRequestHeaders.Add("Authorization", "Basic " + encodedstring);
+            client.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type", "application/x-www-form-urlencoded");
+
+            var response = client.SendAsync(webRequest).Result;
+
+            var responsedata = response.Content.ReadAsStringAsync().Result;
+
+            var obj = Newtonsoft.Json.JsonConvert.DeserializeObject<OauthViewModal>(responsedata);
+
+            return obj.access_token;
+
+        }
         public static StringCollection GetAllOrderIds()
         {
             Console.WriteLine("Orders Ids");
             //token get from database
-            string refreshToken = "v^1.1#i^1#r^0#I^3#p^3#f^0#t^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";
+            //string refreshToken = "v^1.1#i^1#r^0#I^3#p^3#f^0#t^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";
 
+            string refreshToken = GetRefreshCode("v^1.1#i^1#p^3#I^3#r^1#f^0#t^Ul4xMF8wOjE0OTA2NDYwNDUwNTlBNjYyODczNDRBQTg4NzdCMTIzXzNfMSNFXjI2MA==");
             GetOrdersCall getOrdersApiCall = new GetOrdersCall(context);
 
             //time filter to get last 20 days orders
             TimeFilter timeFilter =new TimeFilter();
-            timeFilter.TimeFrom = DateTime.UtcNow.AddDays(-20);
+            timeFilter.TimeFrom = DateTime.UtcNow.AddDays(-90);
             timeFilter.TimeTo = DateTime.UtcNow;
             
             context.ApiCredential.eBayToken = refreshToken.Trim();
@@ -43,7 +98,7 @@ namespace EbayServiceTesting
             DetailLevelCodeType[] detailLevels = new DetailLevelCodeType[] { DetailLevelCodeType.ReturnSummary };
             getOrdersApiCall.DetailLevelList = new DetailLevelCodeTypeCollection(detailLevels);
             //getOrdersApiCall.GetOrders(timeFilter, TradingRoleCodeType.Seller, OrderStatusCodeType.Completed); //This was originally in code I changed status to get all products
-            getOrdersApiCall.GetOrders(timeFilter, TradingRoleCodeType.Seller, OrderStatusCodeType.All);
+            getOrdersApiCall.GetOrders(timeFilter, TradingRoleCodeType.Seller, OrderStatusCodeType.Completed);
 
             PaginationType pagination = new PaginationType()
             {
@@ -91,7 +146,7 @@ namespace EbayServiceTesting
             {
                 //time filter to get last 20 days orders
                 TimeFilter timeFilter = new TimeFilter();
-                timeFilter.TimeFrom = DateTime.UtcNow.AddDays(-20);
+                timeFilter.TimeFrom = DateTime.UtcNow.AddDays(-90);
                 timeFilter.TimeTo = DateTime.UtcNow;
 
                 //OrderTypeCollection orders = getOrdersApiCall.GetOrders(timeFilter, TradingRoleCodeType.Seller, OrderStatusCodeType.Completed); //This was originally in code I changed status to get all products
@@ -140,5 +195,6 @@ namespace EbayServiceTesting
 
             }
         }
+
     }
 }

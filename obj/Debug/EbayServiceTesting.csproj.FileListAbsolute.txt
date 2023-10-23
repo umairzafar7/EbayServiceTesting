@@ -9,3 +9,5 @@ D:\Umair Work\Git\EbayServiceTesting\obj\Debug\EbayServiceTesting.csproj.CoreCom
 D:\Umair Work\Git\EbayServiceTesting\obj\Debug\EbayServiceTesting.csproj.CopyComplete
 D:\Umair Work\Git\EbayServiceTesting\obj\Debug\EbayServiceTesting.exe
 D:\Umair Work\Git\EbayServiceTesting\obj\Debug\EbayServiceTesting.pdb
+D:\Umair Work\Git\EbayServiceTesting\bin\Debug\Newtonsoft.Json.dll
+D:\Umair Work\Git\EbayServiceTesting\bin\Debug\Newtonsoft.Json.xml
